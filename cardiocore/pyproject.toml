@@ -1,37 +1,37 @@
 [build-system]
-requires = [\"setuptools>=68\", \"wheel\"]
-build-backend = \"setuptools.backends.legacy:build\"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = \"cardiocore\"
-version = \"1.0.0\"
-requires-python = \">=3.12\"
+name = "cardiocore"
+version = "1.0.0"
+requires-python = ">=3.12"
 dependencies = [
-    \"fastapi>=0.115\",
-    \"uvicorn[standard]>=0.30\",
-    \"python-multipart>=0.0.9\",
-    \"httpx>=0.27\",
-    \"transformers>=4.47\",
-    \"torch>=2.4\",
-    \"pillow>=10.4\",
-    \"numpy>=1.26\",
-    \"pandas>=2.2\",
-    \"scipy>=1.13\",
-    \"matplotlib>=3.9\",
-    \"imageio[ffmpeg]>=2.34\",
-    \"fhir.resources>=7.1\",
-    \"rich>=13.7\",
-    \"python-dotenv>=1.0\",
-    \"scikit-learn>=1.5\",
-    \"wfdb>=4.1\",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
+    "transformers>=4.47",
+    "torch>=2.4",
+    "pillow>=10.4",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "matplotlib>=3.9",
+    "imageio[ffmpeg]>=2.34",
+    "fhir.resources>=7.1",
+    "rich>=13.7",
+    "python-dotenv>=1.0",
+    "scikit-learn>=1.5",
+    "wfdb>=4.1",
 ]
 
 [project.optional-dependencies]
-dev = [\"pytest>=8.2\", \"pytest-asyncio>=0.23\", \"httpx\"]
+dev = ["pytest>=8.2", "pytest-asyncio>=0.23", "httpx"]
 
 [tool.setuptools.packages.find]
-where = [\".\"]
+where = ["."]
 
 [tool.pytest.ini_options]
-asyncio_mode = \"auto\"
-testpaths = [\"tests\"]
+asyncio_mode = "auto"
+testpaths = ["tests"]
