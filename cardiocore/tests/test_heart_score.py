@@ -4,18 +4,26 @@
 #
 # Run with: pytest tests/test_heart_score.py -v
 
-import pytest
 from inference.heart_score import HEARTScorer
 
-# TODO: Binula implements these tests on Day 4
-# Expected tests:
-#   test_low_risk()   - score=0, tier=Normal
-#   test_high_risk()  - score=10, tier=Urgent
-#   test_moderate()   - score=5, tier=Routine
-#   test_components_sum() - sum of components equals total score
-#   test_age_thresholds() - age 44=0pts, 45=1pt, 65=2pts
-#   test_mi_override()    - ecg_class=MI forces Urgent regardless of score
+def test_low_risk():
+    s = HEARTScorer()
+    r = s.compute({'history_suspicion':'slightly_nonspecific',
+                   'ecg_result':'normal','age':40,'risk_factors':[],
+                   'troponin_ratio':0.8})
+    assert r['heart_score'] == 0
+    assert r['triage_tier'] == 'Normal'
 
-def test_placeholder():
-    # Remove this and add real tests on Day 4
-    assert True
+def test_high_risk():
+    s = HEARTScorer()
+    r = s.compute({'history_suspicion':'highly_suspicious',
+                   'ecg_result':'significant_deviation','age':70,
+                   'risk_factors':['diabetes','hypertension','smoking'],
+                   'troponin_ratio':4.0})
+    assert r['heart_score'] == 10
+    assert r['triage_tier'] == 'Urgent'
+
+def test_components_sum():
+    r = HEARTScorer().compute({})
+    assert sum(r['component_scores'].values()) == r['heart_score']
+

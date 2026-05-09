@@ -32,15 +32,34 @@ MOCK_RISK_RESULT = {
     "component_scores": {"H": 2, "E": 2, "A": 2, "R": 1, "T": 2},
 }
 
-# TODO: Binula implements these tests on Day 4
-# Expected tests:
-#   test_ecg_observation_structure()
-#   test_echo_observation_structure()
-#   test_bundle_has_three_entries()
-#   test_bundle_validates()
-#   test_bundle_json_serializable()
-#   test_bundle_summary_has_triage_tier()
+import json
+from fhir.bundle import build_fhir_bundle, get_summary
+from fhir.validator import validate_bundle
 
-def test_placeholder():
-    # Remove this and add real tests on Day 4
-    assert True
+ECG  = {'rhythm_class':'MI','confidence':0.91,'snomed_code':'57054005',
+        'snomed_description':'Acute MI','clinical_flags':['ST elevation']}
+ECHO = {'ef_percent':28.5,'hf_classification':'HFrEF','hf_snomed_code':'85232009',
+        'hf_snomed_description':'HFrEF','wall_motion_flags':['Reduced']}
+RISK = {'triage_tier':'Urgent','heart_score':9,'mace_10day_probability':'> 50%',
+        'recommended_action':'Immediate cardiology consultation'}
+
+def test_bundle_structure():
+    b = build_fhir_bundle('p001', ECG, ECHO, RISK)
+    assert b['resourceType'] == 'Bundle'
+    assert len(b['entry']) == 3
+
+def test_bundle_validates():
+    b = build_fhir_bundle('p001', ECG, ECHO, RISK)
+    ok, errs = validate_bundle(b)
+    assert ok, f'Validation failed: {errs}'
+
+def test_bundle_json_serializable():
+    b = build_fhir_bundle('p001', ECG, ECHO, RISK)
+    assert len(json.dumps(b)) > 100
+
+def test_bundle_summary():
+    b = build_fhir_bundle('p001', ECG, ECHO, RISK)
+    s = get_summary(b)
+    assert s['triage_tier'] == 'Urgent'
+    assert len(s['summary']) > 20
+

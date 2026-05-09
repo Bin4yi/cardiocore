@@ -21,5 +21,40 @@
 #       mace_10day_probability, recommended_action
 #   }}
 
-# TODO: Binula implements this on Day 3
-# See implementation guide for full code
+import time
+from fastapi import APIRouter
+from inference.heart_score import HEARTScorer
+
+router  = APIRouter()
+_scorer = HEARTScorer()
+
+ECG_TO_HEART = {
+    'NORM':'normal','STTC':'nonspecific_repol',
+    'MI':'significant_deviation','CD':'nonspecific_repol','HYP':'nonspecific_repol',
+}
+
+@router.post('/tools/risk_stratify')
+async def risk_stratify(body: dict):
+    start   = time.perf_counter()
+    ecg     = body.get('ecg_analysis',{}).get('result',{})
+    echo    = body.get('echo_analysis',{}).get('result',{})
+    clin    = body.get('clinical_context',{})
+    ecg_cls = ecg.get('rhythm_class','NORM')
+    ef      = float(echo.get('ef_percent', 55.0))
+    inputs  = {
+        'history_suspicion': clin.get('history_suspicion','moderately'),
+        'ecg_result':        ECG_TO_HEART.get(ecg_cls,'nonspecific_repol'),
+        'age':               int(clin.get('age', 60)),
+        'risk_factors':      clin.get('known_conditions', []),
+        'troponin_ratio':    float(clin.get('troponin_ratio', 1.0)),
+    }
+    result = _scorer.compute(inputs)
+    # Override for critical findings
+    if ecg_cls == 'MI' or ef < 35:
+        result['triage_tier']       = 'Urgent'
+        result['recommended_action'] = 'Immediate cardiology consultation'
+    ms = round((time.perf_counter()-start)*1000, 1)
+    return {'tool':'risk_stratify','status':'success',
+            'processing_time_ms':ms,'result':result}
+
+

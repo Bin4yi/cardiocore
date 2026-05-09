@@ -12,8 +12,21 @@
 #   # is_valid: True if bundle passes all checks
 #   # errors: list of error strings if invalid
 
-# TODO: Binula implements this on Day 3
-# See implementation guide for full code
-
 def validate_bundle(bundle: dict) -> tuple:
-    raise NotImplementedError("Binula: implement fhir/validator.py on Day 3")
+    errors = []
+    if bundle.get('resourceType') != 'Bundle':
+        errors.append('resourceType must be Bundle')
+    entries = bundle.get('entry', [])
+    if not entries:
+        errors.append('entry must be non-empty')
+    types = [e.get('resource',{}).get('resourceType') for e in entries]
+    if 'DiagnosticReport' not in types:
+        errors.append('Bundle must contain a DiagnosticReport')
+    for e in entries:
+        r = e.get('resource',{})
+        if r.get('resourceType')=='DiagnosticReport':
+            if not r.get('conclusion') or len(r['conclusion'])<20:
+                errors.append('DiagnosticReport.conclusion too short')
+    return len(errors)==0, errors
+
+
