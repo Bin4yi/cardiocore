@@ -1,46 +1,145 @@
-﻿import os
+import json
+import logging
+import os
+from typing import List, Optional
 
-class StubClient:
-    """Fake Gemma 4 client for local development. Returns canned JSON."""
+from dotenv import load_dotenv
+from openai import OpenAI
 
-    def chat(self, system, user_text, images_b64=None, max_tokens=400):
-        # Return appropriate canned JSON based on prompt content
-        prompt_lower = user_text.lower()
-        if 'ejection fraction' in prompt_lower or 'ef_percent' in prompt_lower:
-            return ('{"ef_percent": 55, "hf_classification": "Normal", '
-                    '"wall_motion_flags": [], "confidence": 0.85, '
-                    '"reasoning": "stub: normal LV systolic function"}')
-        if 'lv_size' in prompt_lower or 'cardiac structure' in prompt_lower:
-            return ('{"lv_size": "normal", "wall_thickness": "normal", '
-                    '"structural_flags": [], "pericardial_effusion": false, '
-                    '"confidence": 0.85, "reasoning": "stub: no structural abnormalities"}')
-        if 'rhythm_class' in prompt_lower or 'ecg' in prompt_lower:
-            return ('{"rhythm_class": "NORM", "confidence": 0.91, '
-                    '"clinical_flags": [], "reasoning": "stub: normal sinus rhythm"}')
-        return '{}'
+load_dotenv()
 
-    def parse_json(self, text):
-        import json
-        return json.loads(text.strip())
+logging.basicConfig(level=logging.INFO)
 
-    def healthy(self):
-        return True
+GEMMA_BASE_URL = os.getenv(
+    "GEMMA_BASE_URL",
+    "http://localhost:9000/v1"
+)
+
+MODEL_NAME = os.getenv(
+    "MODEL_NAME",
+    "google/gemma-3-4b-it"
+)
+
+
+class Gemma4Client:
+
+    def __init__(self):
+
+        self.client = OpenAI(
+            base_url=GEMMA_BASE_URL,
+            api_key="not-needed"
+        )
+
+        self._model_id = MODEL_NAME
 
     @property
     def model_id(self):
-        return 'stub-gemma-4-12b'
 
-    @property
-    def base_url(self):
-        return 'stub://local'
+        return self._model_id
+
+    def healthy(self) -> bool:
+
+        try:
+
+            models = self.client.models.list()
+
+            return len(models.data) > 0
+
+        except Exception as e:
+
+            logging.error(f"Health check failed: {e}")
+
+            return False
+
+    def chat(
+        self,
+        system_prompt: str,
+        user_text: str,
+        images_b64: Optional[List[str]] = None,
+        max_tokens: int = 300,
+        temperature: float = 0.2
+    ) -> str:
+
+        try:
+
+            logging.info("Sending request to Gemma")
+
+            content = []
+
+            if images_b64:
+
+                for img_b64 in images_b64:
+
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{img_b64}"
+                        }
+                    })
+
+            content.append({
+                "type": "text",
+                "text": user_text
+            })
+
+            response = self.client.chat.completions.create(
+                model=self.model_id,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": content
+                    }
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+
+            result = response.choices[0].message.content
+
+            logging.info("Gemma response received")
+
+            return result
+
+        except Exception as e:
+
+            logging.error(f"Gemma request failed: {e}")
+
+            raise
+
+    def parse_json(self, text: str):
+
+        t = text.strip()
+
+        if "```" in t:
+
+            parts = t.split("```")
+
+            for p in parts:
+
+                p = p.strip().lstrip("json").strip()
+
+                try:
+                    return json.loads(p)
+
+                except:
+                    pass
+
+        return json.loads(t)
 
 
 _client = None
+
+
 def get_client():
+
     global _client
+
     if _client is None:
-        if os.getenv('STUB_GEMMA') == '1':
-            _client = StubClient()
-        else:
-            _client = Gemma4Client()
+
+        _client = Gemma4Client()
+
     return _client

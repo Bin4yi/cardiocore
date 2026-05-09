@@ -1,20 +1,80 @@
-﻿# OWNER: Teammate A
-# DAY:   3
-# PURPOSE: Build a FHIR R4 Observation resource for ejection fraction
-#
-# FHIR spec used:
-#   resourceType: Observation
-#   code: LOINC 10230-1 (Left ventricular Ejection fraction)
-#   valueQuantity: {value: ef_percent, unit: "%", system: UCUM}
-#
-# Expected interface:
-#
-#   from fhir.echo_observation import build_echo_observation
-#   obs = build_echo_observation(echo_result_dict, patient_id="patient-001")
-#   # returns a valid FHIR R4 Observation dict
+import uuid
 
-# TODO: Teammate A implements this on Day 3
-# See implementation guide for full code
+from datetime import (
+    datetime,
+    timezone
+)
 
-def build_echo_observation(echo_result: dict, patient_id: str) -> dict:
-    raise NotImplementedError("Teammate A: implement fhir/echo_observation.py on Day 3")
+
+def build_echo_observation(
+    echo_result: dict,
+    patient_id: str
+) -> dict:
+
+    ef = round(
+        echo_result.get(
+            "ef_percent",
+            55.0
+        ),
+        1
+    )
+
+    # Interpretation codes:
+    # N  = Normal
+    # L  = Low
+    # LL = Critically low
+
+    interpretation_code = (
+        "LL"
+        if ef < 40
+        else "L"
+        if ef < 55
+        else "N"
+    )
+
+    return {
+
+        "resourceType": "Observation",
+
+        "id": str(uuid.uuid4()),
+
+        "status": "final",
+
+        "code": {
+            "coding": [{
+                "system": "http://loinc.org",
+                "code": "10230-1",
+                "display":
+                    "Left ventricular Ejection fraction"
+            }]
+        },
+
+        "subject": {
+            "reference": f"Patient/{patient_id}"
+        },
+
+        "effectiveDateTime": datetime.now(
+            timezone.utc
+        ).isoformat(),
+
+        "valueQuantity": {
+
+            "value": ef,
+
+            "unit": "%",
+
+            "system":
+                "http://unitsofmeasure.org",
+
+            "code": "%"
+        },
+
+        "interpretation": [{
+            "coding": [{
+                "system":
+                    "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+
+                "code": interpretation_code
+            }]
+        }]
+    }
