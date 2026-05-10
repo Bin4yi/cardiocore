@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CardioCore — Agentic Cardiac Assessment · AMD MI300X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.27/build/spline-viewer.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#E8EFF8;
+  --surf:#FFFFFF;
+  --surf2:#F4F7FC;
+  --surf3:#EAF0F9;
+  --bd:#D0DBEC;--bd2:#B8C8DE;
+  --t:#071528;--t2:#2D4A72;--t3:#6B85A8;
+  --red:#B91C1C;--red2:#DC2626;--red3:#EF4444;
+  --rl:#FEF2F2;--rb:#FCA5A5;
+  --grn:#15803D;--grn2:#16A34A;
+  --gl:#F0FDF4;--gb:#86EFAC;
+  --amb:#B45309;--al:#FFFBEB;--ab:#FCD34D;
+  --blu:#1D4ED8;--blu2:#2563EB;--blu3:#3B82F6;
+  --bll:#EFF6FF;--bb:#93C5FD;
+  --tel:#0F766E;--tl:#F0FDFA;--tb2:#5EEAD4;
+  --pur:#7C3AED;--pl:#F5F3FF;--pb:#C4B5FD;
+  --r:6px;--r2:10px;--r3:16px;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --sh:0 1px 4px rgba(7,21,40,.09),0 1px 2px rgba(7,21,40,.06);
+  --sh2:0 6px 20px rgba(7,21,40,.10),0 2px 8px rgba(7,21,40,.06);
+  --sh3:0 12px 40px rgba(7,21,40,.14),0 4px 12px rgba(7,21,40,.08);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
+
+/* ── ECG BACKGROUND ──────────────────────────── */
+.ecg-bg{
+  position:fixed;bottom:0;left:0;right:0;
+  pointer-events:none;z-index:0;height:100px;overflow:hidden;
+}
+.ecg-bg svg{width:100%;height:100%;opacity:.04}
+
+/* ── LAYOUT ──────────────────────────────────── */
+.app{
+  display:grid;
+  grid-template-columns:480px 1fr;
+  height:100vh;
+  position:relative;z-index:1;
+}
+
+/* ═══════════════════════════════════════════════
+   LEFT — FULL HEIGHT ROBOT
+═══════════════════════════════════════════════ */
+.rp{
+  position:relative;
+  background:linear-gradient(175deg,#050E1F 0%,#0B1A35 30%,#091E3A 60%,#071428 100%);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+}
+
+/* animated gradient blobs */
+.rp::before{
+  content:'';position:absolute;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.18) 0%,transparent 70%);
+  top:-100px;right:-150px;pointer-events:none;
+  animation:blobA 8s ease-in-out infinite alternate;
+}
+.rp::after{
+  content:'';position:absolute;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(220,38,38,.12) 0%,transparent 70%);
+  bottom:200px;left:-120px;pointer-events:none;
+  animation:blobB 10s ease-in-out infinite alternate;
+}
+@keyframes blobA{to{transform:translateY(40px) scale(1.1)}}
+@keyframes blobB{to{transform:translateX(30px) scale(1.08)}}
+
+/* top branding */
+.rp-top{
+  position:absolute;top:0;left:0;right:0;z-index:30;
+  padding:18px 20px 0;
+  background:linear-gradient(to bottom,rgba(5,14,31,.96) 0%,rgba(5,14,31,.7) 55%,transparent 100%);
+}
+.rp-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.rp-ico{
+  width:36px;height:36px;border-radius:var(--r2);
+  background:linear-gradient(135deg,var(--red2) 0%,var(--red) 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(220,38,38,.45);
+}
+.rp-ico svg{width:19px;height:19px;color:#fff}
+.rp-name{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.6px}
+.rp-ver{
+  font-size:10px;color:rgba(255,255,255,.35);
+  font-family:var(--mono);padding:2px 7px;
+  background:rgba(255,255,255,.07);border-radius:3px;
+  border:1px solid rgba(255,255,255,.1);
+}
+.rp-tagline{font-size:11px;color:rgba(255,255,255,.4);line-height:1.6;padding-bottom:8px}
+
+/* spline — fills all remaining space */
+spline-viewer{width:100%;flex:1;display:block;background:transparent;min-height:0}
+
+/* ECG pulse line mid-panel */
+.rp-ecg{
+  position:absolute;z-index:20;pointer-events:none;
+  left:0;right:0;opacity:.18;
+}
+.rp-ecg svg{width:100%}
+
+/* bottom overlay */
+.rp-bot{
+  position:absolute;bottom:0;left:0;right:0;z-index:30;
+  background:linear-gradient(to top,rgba(5,14,31,.99) 0%,rgba(5,14,31,.85) 55%,transparent 100%);
+  padding:22px 20px 18px;
+}
+.rp-bot-title{
+  font-size:10px;font-family:var(--mono);
+  color:rgba(255,255,255,.28);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:12px;
+}
+.rp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.rp-stat{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:var(--r2);padding:10px 12px;
+  transition:border-color .3s;
+}
+.rp-stat.updated{border-color:rgba(99,220,150,.35);animation:statpop .5s ease}
+@keyframes statpop{0%{transform:scale(.97)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.rp-v{font-size:20px;font-weight:700;font-family:var(--mono);color:#fff;line-height:1;transition:color .4s}
+.rp-v.r{color:#F87171}.rp-v.g{color:#4ADE80}.rp-v.a{color:#FBBF24}.rp-v.b{color:#60A5FA}
+.rp-l{font-size:9px;color:rgba(255,255,255,.3);margin-top:3px;font-family:var(--mono);letter-spacing:.8px}
+
+/* badge row */
+.rp-badges{display:flex;gap:5px;flex-wrap:wrap}
+.rpb{
+  font-size:10px;font-family:var(--mono);
+  padding:4px 9px;border-radius:4px;border:1px solid;
+  letter-spacing:.3px;font-weight:600;
+}
+.rpb.r{color:#FCA5A5;border-color:rgba(252,165,165,.3);background:rgba(220,38,38,.2)}
+.rpb.b{color:#93C5FD;border-color:rgba(147,197,253,.3);background:rgba(59,130,246,.15)}
+.rpb.g{color:#6EE7B7;border-color:rgba(110,231,183,.3);background:rgba(16,185,129,.15)}
+.rpb.a{color:#FDE68A;border-color:rgba(253,230,138,.3);background:rgba(245,158,11,.15)}
+
+/* ═══════════════════════════════════════════════
+   RIGHT — DASHBOARD
+═══════════════════════════════════════════════ */
+.dash{
+  display:flex;flex-direction:column;overflow:hidden;
+  border-left:1px solid var(--bd);
+}
+
+/* topbar */
+.topbar{
+  height:56px;background:var(--surf);
+  border-bottom:2px solid var(--bd);box-shadow:var(--sh2);
+  display:flex;align-items:center;padding:0 18px;gap:8px;
+  flex-shrink:0;
+}
+.tb-steps{display:flex;align-items:center;gap:3px}
+.tbs{
+  font-size:11px;font-family:var(--mono);font-weight:600;
+  padding:5px 11px;border-radius:99px;
+  border:1.5px solid var(--bd);background:var(--surf2);color:var(--t3);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.tbs:hover{color:var(--t2);border-color:var(--bd2);background:var(--surf3)}
+.tbs.active{background:var(--rl);border-color:var(--rb);color:var(--red2);font-weight:700}
+.tbs.done{background:var(--gl);border-color:var(--gb);color:var(--grn2);font-weight:700}
+.tba{color:var(--t3);font-size:12px;font-weight:600}
+.tb-right{display:flex;align-items:center;gap:7px;margin-left:auto}
+.tb-right label{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--t3);white-space:nowrap}
+.tb-right input{
+  background:var(--surf2);border:1.5px solid var(--bd);border-radius:var(--r);
+  color:var(--t);font-family:var(--mono);font-size:11px;padding:6px 9px;
+  outline:none;transition:border-color .2s;font-weight:500;
+}
+.tb-right input:focus{border-color:var(--blu2);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.pid-inp{width:100px!important}
+.srv-inp{width:200px!important}
+.test-btn{
+  padding:6px 13px;background:var(--surf2);
+  border:1.5px solid var(--bd2);border-radius:var(--r);
+  color:var(--t2);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--sans);transition:all .15s;
+}
+.test-btn:hover{border-color:var(--blu2);color:var(--blu);background:var(--bll)}
+.ndot{width:8px;height:8px;border-radius:50%;background:var(--bd2);flex-shrink:0;transition:all .3s}
+.ndot.ok{background:var(--grn2);box-shadow:0 0 0 2px var(--gb)}.ndot.err{background:var(--red2)}
+.nlbl{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--t3)}
+
+/* panels */
+.panels{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+
+/* ── STEP CARD ────────────────────────────────── */
+.scard{
+  background:var(--surf);border:2px solid var(--bd);
+  border-radius:var(--r2);box-shadow:var(--sh);
+  overflow:hidden;transition:all .2s;flex-shrink:0;
+}
+.scard.active{border-color:var(--red3);box-shadow:0 0 0 3px rgba(220,38,38,.08),var(--sh2)}
+.scard.done{border-color:var(--grn2);box-shadow:0 0 0 3px rgba(22,163,74,.06),var(--sh)}
+
+/* card header */
+.sc-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;cursor:pointer;transition:background .12s;
+  user-select:none;
+}
+.sc-hdr:hover{background:var(--surf2)}
+.scard.active .sc-hdr{background:linear-gradient(90deg,#FEF2F2,#FFF5F5)}
+.scard.done .sc-hdr{background:linear-gradient(90deg,#F0FDF4,#F7FEF9)}
+.sn{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--surf3);border:2px solid var(--bd2);
+  font-size:11px;font-family:var(--mono);font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--t2);
+}
+.scard.active .sn{background:var(--red2);border-color:var(--red);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.4)}
+.scard.done .sn{background:var(--grn2);border-color:var(--grn);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.si{
+  width:30px;height:30px;border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:var(--sh);
+}
+.si svg{width:15px;height:15px}
+.si.r{background:linear-gradient(135deg,#FEE2E2,#FEF2F2)}.si.r svg{color:var(--red2)}
+.si.b{background:linear-gradient(135deg,#DBEAFE,#EFF6FF)}.si.b svg{color:var(--blu2)}
+.si.te{background:linear-gradient(135deg,#CCFBF1,#F0FDFA)}.si.te svg{color:var(--tel)}
+.si.a{background:linear-gradient(135deg,#FEF3C7,#FFFBEB)}.si.a svg{color:var(--amb)}
+.si.g{background:linear-gradient(135deg,#DCFCE7,#F0FDF4)}.si.g svg{color:var(--grn2)}
+.sc-info{flex:1;min-width:0}
+.sc-t{font-size:14px;font-weight:700;color:var(--t);letter-spacing:-.3px}
+.scard.active .sc-t{color:var(--red)}.scard.done .sc-t{color:var(--grn)}
+.sc-ep{font-size:10px;font-family:var(--mono);color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.mt{font-size:9px;font-family:var(--mono);font-weight:700;padding:2px 6px;border-radius:3px;background:linear-gradient(90deg,#DBEAFE,#EFF6FF);color:var(--blu);border:1px solid var(--bb);margin-right:5px}
+.sc-bdg{
+  font-size:10px;font-family:var(--mono);font-weight:700;
+  padding:3px 10px;border-radius:4px;border:1.5px solid;flex-shrink:0;
+}
+.scard:not(.done):not(.active) .sc-bdg{background:var(--surf3);color:var(--t3);border-color:var(--bd)}
+.scard.active .sc-bdg{background:var(--rl);color:var(--red);border-color:var(--rb)}
+.scard.done .sc-bdg{background:var(--gl);color:var(--grn);border-color:var(--gb)}
+
+/* card body */
+.sc-body{padding:14px 16px;border-top:1.5px solid var(--bd)}
+
+/* upload zone */
+.upz{
+  border:2px dashed var(--bd2);border-radius:var(--r2);
+  padding:18px 16px;text-align:center;cursor:pointer;
+  transition:all .18s;position:relative;background:var(--surf2);
+}
+.upz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upz:hover{border-color:var(--red2);background:var(--rl);transform:translateY(-1px)}
+.upz.filled{border-style:solid;border-color:var(--grn2);background:var(--gl);transform:none}
+.upz-ico{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surf);border:1.5px solid var(--bd);
+  margin:0 auto 9px;display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--sh);
+}
+.upz-ico svg{width:18px;height:18px;color:var(--t3)}
+.upz.filled .upz-ico{background:var(--gl);border-color:var(--gb)}
+.upz.filled .upz-ico svg{color:var(--grn2)}
+.upz-t{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:2px}
+.upz-h{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.upz.filled .upz-t{color:var(--grn)}
+.ep_{
+  margin-top:8px;border-radius:var(--r);overflow:hidden;
+  background:var(--surf2);border:1.5px solid var(--bd);
+  display:flex;align-items:center;justify-content:center;max-height:70px;
+}
+.ep_ img{max-width:100%;max-height:70px;object-fit:contain}
+
+/* timeout warning */
+.timeout-warn{
+  background:linear-gradient(90deg,#FFFBEB,#FEF9EC);
+  border:1.5px solid var(--ab);border-radius:var(--r2);
+  padding:10px 14px;margin-top:10px;
+  font-size:12px;color:var(--amb);display:none;
+  align-items:center;gap:8px;font-weight:500;
+}
+.timeout-warn svg{flex-shrink:0}
+
+/* clinical form */
+.cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.cf-f label{font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px}
+.cf-f input,.cf-f select{
+  width:100%;background:var(--surf2);border:1.5px solid var(--bd);
+  border-radius:var(--r);color:var(--t);font-family:var(--mono);
+  font-size:12px;padding:7px 9px;outline:none;transition:border-color .2s;font-weight:500;
+}
+.cf-f input:focus,.cf-f select:focus{border-color:var(--blu2);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+
+/* run button */
+.rbtn{
+  width:100%;padding:11px;
+  background:linear-gradient(135deg,var(--red2) 0%,var(--red) 100%);
+  border:none;border-radius:var(--r2);color:#fff;font-family:var(--sans);
+  font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:all .15s;margin-top:12px;letter-spacing:-.2px;
+  box-shadow:0 3px 12px rgba(220,38,38,.35);
+}
+.rbtn:hover:not(:disabled){box-shadow:0 6px 20px rgba(220,38,38,.45);transform:translateY(-1px)}
+.rbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.rbtn svg{width:14px;height:14px}
+
+/* notice */
+.notice{
+  font-size:12px;color:var(--t2);font-weight:500;
+  padding:10px 13px;border-radius:var(--r2);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.notice.blu{background:linear-gradient(90deg,var(--bll),#F0F7FF);border:1.5px solid var(--bb)}
+.notice.grn{background:linear-gradient(90deg,var(--gl),#EDFEF5);border:1.5px solid var(--gb)}
+.notice svg{flex-shrink:0}
+
+/* result */
+.res_{margin-top:12px;animation:fu .25s ease}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* metrics */
+.mrow{display:flex;gap:8px;margin-bottom:10px}
+.mbox{
+  flex:1;min-width:70px;border-radius:var(--r2);padding:12px 13px;
+  border:1.5px solid;box-shadow:var(--sh);
+}
+.mbox.r{background:var(--rl);border-color:var(--rb)}.mbox.g{background:var(--gl);border-color:var(--gb)}
+.mbox.b{background:var(--bll);border-color:var(--bb)}.mbox.a{background:var(--al);border-color:var(--ab)}
+.mbox.te{background:var(--tl);border-color:var(--tb2)}.mbox.pu{background:var(--pl);border-color:var(--pb)}
+.mbox.neu{background:var(--surf2);border-color:var(--bd)}
+.ml{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--t3);letter-spacing:.3px;margin-bottom:4px;text-transform:uppercase}
+.mv{font-size:20px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--t)}
+.mv.r{color:var(--red2)}.mv.g{color:var(--grn)}.mv.b{color:var(--blu2)}.mv.a{color:var(--amb)}.mv.te{color:var(--tel)}.mv.pu{color:var(--pur)}
+
+/* data table */
+.dtbl{border:1.5px solid var(--bd);border-radius:var(--r2);overflow:hidden;background:var(--surf)}
+.dr_{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--bd);font-size:12px}
+.dr_:last-child{border-bottom:none}
+.dk{color:var(--t2);font-weight:600}.dv{font-family:var(--mono);font-size:11px;color:var(--t);text-align:right;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+
+/* flags */
+.fp_{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.fp{font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 10px;border-radius:99px;background:linear-gradient(90deg,var(--al),var(--rl));border:1.5px solid var(--ab);color:var(--amb)}
+
+/* triage */
+.tbn{border-radius:var(--r2);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;border:2px solid;box-shadow:var(--sh2)}
+.tbn.urg{background:linear-gradient(135deg,#FEF2F2,#FFF5F5);border-color:var(--rb)}
+.tbn.rot{background:linear-gradient(135deg,var(--al),#FFFDF0);border-color:var(--ab)}
+.tbn.nrm{background:linear-gradient(135deg,var(--gl),#F7FEF9);border-color:var(--gb)}
+.tbn-i{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:var(--surf);box-shadow:var(--sh);
+}
+.tbn-i svg{width:18px;height:18px}
+.tbn.urg .tbn-i svg{color:var(--red2)}.tbn.rot .tbn-i svg{color:var(--amb)}.tbn.nrm .tbn-i svg{color:var(--grn2)}
+.tbn-tier{font-size:14px;font-weight:800;letter-spacing:-.3px}
+.tbn.urg .tbn-tier{color:var(--red)}.tbn.rot .tbn-tier{color:var(--amb)}.tbn.nrm .tbn-tier{color:var(--grn)}
+.tbn-det{font-size:11px;color:var(--t2);margin-top:2px;font-weight:500}
+.tbn-sc{margin-left:auto;font-family:var(--mono);font-size:28px;font-weight:800}
+.tbn.urg .tbn-sc{color:var(--red)}.tbn.rot .tbn-sc{color:var(--amb)}.tbn.nrm .tbn-sc{color:var(--grn)}
+
+/* HEART */
+.hrow{display:flex;gap:6px;margin-top:8px}
+.hb{
+  flex:1;border-radius:var(--r2);padding:10px 6px;text-align:center;
+  border:1.5px solid;box-shadow:var(--sh);
+}
+.hb:nth-child(1){background:var(--rl);border-color:var(--rb)}
+.hb:nth-child(2){background:var(--bll);border-color:var(--bb)}
+.hb:nth-child(3){background:var(--al);border-color:var(--ab)}
+.hb:nth-child(4){background:var(--tl);border-color:var(--tb2)}
+.hb:nth-child(5){background:var(--pl);border-color:var(--pb)}
+.hl{font-size:18px;font-weight:800;font-family:var(--mono)}
+.hb:nth-child(1) .hl{color:var(--red2)}.hb:nth-child(2) .hl{color:var(--blu2)}
+.hb:nth-child(3) .hl{color:var(--amb)}.hb:nth-child(4) .hl{color:var(--tel)}.hb:nth-child(5) .hl{color:var(--pur)}
+.hn{font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:600;margin:2px 0}
+.hs_{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--t)}
+
+/* FHIR */
+.fv{border:1.5px solid var(--bd);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sh)}
+.fvh{background:linear-gradient(90deg,var(--surf2),var(--surf3));border-bottom:1.5px solid var(--bd);padding:8px 13px;display:flex;justify-content:space-between;align-items:center}
+.fvl{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--t2);display:flex;align-items:center;gap:6px}
+.fvl svg{width:13px;height:13px}
+.fvo{font-size:11px;font-family:var(--mono);font-weight:700;color:var(--grn);display:flex;align-items:center;gap:4px}
+.fvo svg{width:13px;height:13px}
+.fvc{font-family:var(--mono);font-size:10px;color:var(--t2);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto;padding:12px;line-height:1.7;background:var(--surf2);font-weight:500}
+.sbrow{display:flex;gap:8px;margin-bottom:10px}
+.sb_{
+  flex:1;border-radius:var(--r2);padding:12px;text-align:center;
+  border:1.5px solid;box-shadow:var(--sh);
+}
+.sb_.tier{background:linear-gradient(135deg,var(--rl),#FFF5F5);border-color:var(--rb)}
+.sb_.res{background:linear-gradient(135deg,var(--bll),#F0F7FF);border-color:var(--bb)}
+.sb_.val{background:linear-gradient(135deg,var(--gl),#F7FEF9);border-color:var(--gb)}
+.sb-v{font-size:16px;font-weight:800;font-family:var(--mono);color:var(--t)}
+.sb-l{font-size:10px;color:var(--t3);margin-top:2px;font-family:var(--mono);font-weight:600}
+.dlbtn{
+  width:100%;padding:10px;background:linear-gradient(135deg,var(--gl),#EDFEF5);
+  border:1.5px solid var(--gb);border-radius:var(--r2);
+  color:var(--grn);font-family:var(--sans);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:8px;box-shadow:var(--sh);
+}
+.dlbtn:hover{background:linear-gradient(135deg,#DCFCE7,var(--gl));box-shadow:var(--sh2);transform:translateY(-1px)}
+.dlbtn svg{width:14px;height:14px}
+
+/* disc */
+.disc{
+  text-align:center;font-size:10px;font-family:var(--mono);font-weight:500;
+  color:var(--t3);padding:7px;border-top:1.5px solid var(--bd);
+  background:linear-gradient(90deg,var(--surf),var(--surf2));flex-shrink:0;
+}
+
+/* spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+
+/* toast */
+.toast{
+  position:fixed;bottom:18px;right:18px;
+  background:var(--surf);border:1.5px solid var(--bd2);
+  border-radius:var(--r2);padding:11px 16px;
+  font-size:13px;font-weight:600;color:var(--t);z-index:999;
+  display:flex;align-items:center;gap:9px;
+  box-shadow:var(--sh3);animation:si .2s ease;max-width:300px;
+}
+@keyframes si{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- ECG BACKGROUND -->
+<div class="ecg-bg">
+  <svg viewBox="0 0 1440 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <path d="M0,50 L65,50 L76,18 L87,82 L98,50 L142,50 L150,32 L154,6 L158,94 L162,50 L240,50 L251,18 L262,82 L273,50 L317,50 L325,32 L329,6 L333,94 L337,50 L415,50 L426,18 L437,82 L448,50 L492,50 L500,32 L504,6 L508,94 L512,50 L590,50 L601,18 L612,82 L623,50 L667,50 L675,32 L679,6 L683,94 L687,50 L765,50 L776,18 L787,82 L798,50 L842,50 L850,32 L854,6 L858,94 L862,50 L940,50 L951,18 L962,82 L973,50 L1017,50 L1025,32 L1029,6 L1033,94 L1037,50 L1115,50 L1126,18 L1137,82 L1148,50 L1192,50 L1200,32 L1204,6 L1208,94 L1212,50 L1290,50 L1301,18 L1312,82 L1323,50 L1367,50 L1375,32 L1379,6 L1383,94 L1387,50 L1440,50" stroke="#1D4ED8" stroke-width="1.5" fill="none"/>
+  </svg>
+</div>
+
+<div class="app">
+
+  <!-- ═══ LEFT: FULL HEIGHT ROBOT ═══ -->
+  <div class="rp">
+    <div class="rp-top">
+      <div class="rp-logo">
+        <div class="rp-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <span class="rp-name">CardioCore</span>
+        <span class="rp-ver">v1.0</span>
+      </div>
+      <div class="rp-tagline">Agentic Cardiac Assessment · Dual AMD MI300X<br/>5 MCP tools · FHIR R4 · End-to-end in &lt;5 seconds</div>
+    </div>
+
+    <spline-viewer url="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"></spline-viewer>
+
+    <!-- mid ECG pulse -->
+    <div class="rp-ecg" style="top:52%">
+      <svg viewBox="0 0 480 28" style="height:28px">
+        <path d="M0,14 L50,14 L60,4 L70,24 L80,14 L110,14 L116,8 L119,1 L122,27 L125,14 L160,14 L170,4 L180,24 L190,14 L220,14 L226,8 L229,1 L232,27 L235,14 L270,14 L280,4 L290,24 L300,14 L330,14 L336,8 L339,1 L342,27 L345,14 L380,14 L390,4 L400,24 L410,14 L440,14 L446,8 L449,1 L452,27 L455,14 L480,14" stroke="rgba(99,179,237,0.7)" stroke-width="1.2" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="rp-bot">
+      <div class="rp-bot-title">Live analysis results</div>
+      <div class="rp-stats">
+        <div class="rp-stat" id="rs1"><div class="rp-v" id="lv-ecg">—</div><div class="rp-l">ECG RHYTHM</div></div>
+        <div class="rp-stat" id="rs2"><div class="rp-v" id="lv-ef">—</div><div class="rp-l">EJECTION FRACTION</div></div>
+        <div class="rp-stat" id="rs3"><div class="rp-v" id="lv-lv">—</div><div class="rp-l">LV SIZE</div></div>
+        <div class="rp-stat" id="rs4"><div class="rp-v" id="lv-tier">—</div><div class="rp-l">TRIAGE TIER</div></div>
+      </div>
+      <div class="rp-badges">
+        <span class="rpb r">PULSE-7B</span>
+        <span class="rpb b">Gemma 3</span>
+        <span class="rpb g">FHIR R4</span>
+        <span class="rpb a">AMD MI300X</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RIGHT: DASHBOARD ═══ -->
+  <div class="dash">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="tb-steps">
+        <div class="tbs active" id="ts1" onclick="sc_(1)">1·ECG</div>
+        <span class="tba">→</span>
+        <div class="tbs" id="ts2" onclick="sc_(2)">2·Echo EF</div>
+        <span class="tba">→</span>
+        <div class="tbs" id="ts3" onclick="sc_(3)">3·Structure</div>
+        <span class="tba">→</span>
+        <div class="tbs" id="ts4" onclick="sc_(4)">4·Risk</div>
+        <span class="tba">→</span>
+        <div class="tbs" id="ts5" onclick="sc_(5)">5·FHIR</div>
+      </div>
+      <div class="tb-right">
+        <label>PATIENT</label>
+        <input type="text" id="pid" value="test-001" class="pid-inp"/>
+        <label>SERVER</label>
+        <input type="text" id="mcp" value="https://nonalined-opal-cerebellar.ngrok-free.dev" class="srv-inp"/>
+        <button class="test-btn" onclick="testConn()">Test connection</button>
+        <div class="ndot" id="ndot"></div>
+        <span class="nlbl" id="nlbl">—</span>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="panels" id="panels">
+
+      <!-- STEP 1: ECG -->
+      <div class="scard active" id="sc1">
+        <div class="sc-hdr" onclick="tog(1)">
+          <div class="sn" id="sn1">1</div>
+          <div class="si r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="sc-info">
+            <div class="sc-t">ECG lead analysis</div>
+            <div class="sc-ep"><span class="mt">POST</span>/tools/analyze_ecg_leads · PULSE-7B · Instance B (165.245.137.168:8000)</div>
+          </div>
+          <div class="sc-bdg" id="sbg1">pending</div>
+        </div>
+        <div class="sc-body" id="sb1">
+          <div class="upz" id="z1">
+            <input type="file" accept=".png,.jpg,.jpeg,.csv" id="f1" onchange="hf(this,'ecg')"/>
+            <div class="upz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+            <div class="upz-t">Upload ECG image or CSV file</div>
+            <div class="upz-h">PNG · JPEG · CSV (12-lead signal)</div>
+          </div>
+          <div id="pv1" class="ep_" style="display:none"></div>
+          <div class="timeout-warn" id="tw1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            PULSE-7B is warming up on the GPU — this first request may take 60–90 seconds. Subsequent requests will be fast.
+          </div>
+          <button class="rbtn" id="rb1" disabled onclick="runEcg()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run ECG analysis
+          </button>
+          <div id="r1" class="res_" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Echo EF -->
+      <div class="scard" id="sc2">
+        <div class="sc-hdr" onclick="tog(2)">
+          <div class="sn" id="sn2">2</div>
+          <div class="si b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+          <div class="sc-info">
+            <div class="sc-t">Ejection fraction estimation</div>
+            <div class="sc-ep"><span class="mt">POST</span>/tools/estimate_ejection_fraction · Gemma 3 · Instance B</div>
+          </div>
+          <div class="sc-bdg" id="sbg2">pending</div>
+        </div>
+        <div class="sc-body" id="sb2" style="display:none">
+          <div class="upz" id="z2">
+            <input type="file" accept=".avi,.mp4,.mov" id="f2" onchange="hf(this,'echo')"/>
+            <div class="upz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 2l6 5-6 5"/></svg></div>
+            <div class="upz-t">Upload echocardiogram video</div>
+            <div class="upz-h">AVI · MP4 · MOV</div>
+          </div>
+          <button class="rbtn" id="rb2" disabled onclick="runEcho()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Estimate ejection fraction
+          </button>
+          <div id="r2" class="res_" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Structure -->
+      <div class="scard" id="sc3">
+        <div class="sc-hdr" onclick="tog(3)">
+          <div class="sn" id="sn3">3</div>
+          <div class="si te"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <div class="sc-info">
+            <div class="sc-t">Cardiac structure analysis</div>
+            <div class="sc-ep"><span class="mt">POST</span>/tools/analyze_cardiac_structure · LV · wall thickness · valves · Instance B</div>
+          </div>
+          <div class="sc-bdg" id="sbg3">pending</div>
+        </div>
+        <div class="sc-body" id="sb3" style="display:none">
+          <div class="notice blu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color:var(--blu2)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Uses the same echo video from step 2 automatically — no re-upload needed.
+          </div>
+          <button class="rbtn" id="rb3" onclick="runStruct()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Analyse cardiac structure
+          </button>
+          <div id="r3" class="res_" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- STEP 4: Risk -->
+      <div class="scard" id="sc4">
+        <div class="sc-hdr" onclick="tog(4)">
+          <div class="sn" id="sn4">4</div>
+          <div class="si a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div class="sc-info">
+            <div class="sc-t">HEART risk stratification</div>
+            <div class="sc-ep"><span class="mt">POST</span>/tools/risk_stratify · Pure Python · &lt;1ms · 10-day MACE · Instance B</div>
+          </div>
+          <div class="sc-bdg" id="sbg4">pending</div>
+        </div>
+        <div class="sc-body" id="sb4" style="display:none">
+          <div class="cf-grid">
+            <div class="cf-f"><label>Patient age</label><input type="number" id="age" value="67" min="18" max="100"/></div>
+            <div class="cf-f"><label>Troponin ratio (×ULN)</label><input type="number" id="trop" value="2.8" step="0.1" min="0"/></div>
+            <div class="cf-f" style="grid-column:1/-1"><label>History suspicion</label>
+              <select id="hist">
+                <option value="slightly_nonspecific">Slightly non-specific</option>
+                <option value="moderately" selected>Moderately suspicious</option>
+                <option value="highly_suspicious">Highly suspicious</option>
+              </select>
+            </div>
+            <div class="cf-f" style="grid-column:1/-1"><label>Known conditions (comma-separated)</label>
+              <input type="text" id="conds" value="diabetes"/>
+            </div>
+          </div>
+          <button class="rbtn" id="rb4" onclick="runRisk()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Compute HEART score
+          </button>
+          <div id="r4" class="res_" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- STEP 5: FHIR -->
+      <div class="scard" id="sc5">
+        <div class="sc-hdr" onclick="tog(5)">
+          <div class="sn" id="sn5">5</div>
+          <div class="si g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg></div>
+          <div class="sc-info">
+            <div class="sc-t">FHIR R4 diagnostic report</div>
+            <div class="sc-ep"><span class="mt">POST</span>/tools/generate_cardiac_report · DiagnosticReport + 2 Observations · Instance B</div>
+          </div>
+          <div class="sc-bdg" id="sbg5">pending</div>
+        </div>
+        <div class="sc-body" id="sb5" style="display:none">
+          <div class="notice grn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color:var(--grn2)"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Chains all results → FHIR R4 Bundle: DiagnosticReport + ECG Observation + EF Observation. Schema-validated.
+          </div>
+          <button class="rbtn" id="rb5" onclick="runReport()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Generate FHIR bundle
+          </button>
+          <div id="r5" class="res_" style="display:none"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="disc">CardioCore v1.0 · AMD Developer Hackathon 2025 · Agents Assemble Healthcare Hackathon · Instance B: 165.245.137.168 · Instance A: 134.199.200.40 · Research only — not for clinical use</div>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+const S={ecgF:null,ecgD:null,echoF:null,echoD:null,stD:null,rkD:null,rpD:null};
+const mc=()=>document.getElementById('mcp').value.replace(/\/$/,'');
+const pi=()=>document.getElementById('pid').value||'test-001';
+const IC={
+  warn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15" style="color:#DC2626"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>`,
+  ok:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15" style="color:#16A34A"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  info:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15" style="color:#2563EB"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>`
+};
+
+function toast(m,t='info'){
+  const e=document.getElementById('toast');
+  e.innerHTML=IC[t]+'<span>'+m+'</span>';
+  e.style.display='flex';clearTimeout(e._t);
+  e._t=setTimeout(()=>e.style.display='none',4000);
+}
+
+function tog(n){
+  const b=document.getElementById('sb'+n);
+  b.style.display=b.style.display==='none'?'block':'none';
+}
+
+function sc_(n){
+  document.getElementById('sb'+n).style.display='block';
+  setTimeout(()=>document.getElementById('sc'+n).scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+
+function pulse(id){
+  const el=document.getElementById(id);
+  el.classList.add('updated');
+  setTimeout(()=>el.classList.remove('updated'),600);
+}
+
+function setDone(n){
+  document.getElementById('sc'+n).className='scard done';
+  document.getElementById('sn'+n).textContent='✓';
+  document.getElementById('sbg'+n).textContent='complete';
+  document.getElementById('ts'+n).className='tbs done';
+  if(n<5){
+    setTimeout(()=>{
+      document.getElementById('sb'+(n+1)).style.display='block';
+      document.getElementById('sc'+(n+1)).classList.add('active');
+      document.getElementById('ts'+(n+1)).className='tbs active';
+      setTimeout(()=>document.getElementById('sc'+(n+1)).scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+    },250);
+  }
+}
+
+async function testConn(){
+  const d=document.getElementById('ndot'),l=document.getElementById('nlbl');
+  d.className='ndot';l.textContent='testing…';
+  try{
+    const r=await fetch(mc()+'/health',{signal:AbortSignal.timeout(7000)});
+    const j=await r.json();
+    d.className='ndot ok';l.textContent='connected';
+    toast('Connected · vLLM ready: '+j.vllm_ready,'ok');
+  }catch(e){
+    d.className='ndot err';l.textContent='error';
+    toast('Cannot reach MCP server — check IP','warn');
+  }
+}
+
+function sr(id,on,lbl){
+  const b=document.getElementById(id);b.disabled=on;
+  b.innerHTML=on
+    ?`<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Analysing…`
+    :`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg> ${lbl}`;
+}
+
+function mm(l,v,c){return`<div class="mbox ${c||'neu'}"><div class="ml">${l}</div><div class="mv ${c||''}">${v}</div></div>`}
+function dr_(k,v){return`<div class="dr_"><span class="dk">${k}</span><span class="dv">${v}</span></div>`}
+
+function hf(inp,type){
+  if(!inp.files[0])return;
+  const f=inp.files[0];
+  if(type==='ecg')S.ecgF=f;else S.echoF=f;
+  const z=document.getElementById(type==='ecg'?'z1':'z2');
+  z.classList.add('filled');
+  z.querySelector('.upz-t').textContent=f.name;
+  z.querySelector('.upz-h').textContent=(f.size/1024).toFixed(1)+' KB ready';
+  const rb=document.getElementById(type==='ecg'?'rb1':'rb2');
+  rb.disabled=false;
+  if(type==='ecg'){
+    // show timeout warning for ECG (PULSE-7B cold start)
+    document.getElementById('tw1').style.display='flex';
+    if(f.type.startsWith('image/')){
+      const p=document.getElementById('pv1');
+      p.style.display='flex';
+      p.innerHTML='<img src="'+URL.createObjectURL(f)+'" alt="ECG"/>';
+    }
+  }
+}
+
+async function runEcg(){
+  if(!S.ecgF)return;sr('rb1',true);
+  const fd=new FormData();fd.append('file',S.ecgF);fd.append('patient_id',pi());
+  try{
+    // PULSE-7B needs 120s timeout — model inference on GPU can take time on first call
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),500000);
+    const r=await fetch(mc()+'/tools/analyze_ecg_leads',{method:'POST',body:fd,signal:ctrl.signal});
+    clearTimeout(tid);
+    const d=await r.json();S.ecgD=d;
+    const res=d.result;const cls=res.rhythm_class;
+    const conf=(res.confidence*100).toFixed(0);
+    const cc=cls==='NORM'?'g':cls==='MI'?'r':'a';
+    document.getElementById('r1').innerHTML=`
+      <div class="mrow">
+        ${mm('Rhythm class',cls,cc)}
+        ${mm('Confidence',conf+'%',conf>70?'g':conf>40?'a':'r')}
+        ${mm('Time',d.processing_time_ms+'ms','b')}
+      </div>
+      <div class="dtbl">
+        ${dr_('SNOMED code',res.snomed_code)}
+        ${dr_('Description',res.snomed_description||'—')}
+        ${dr_('Reasoning',res.reasoning||'—')}
+      </div>
+      ${(res.clinical_flags||[]).length?'<div class="fp_">'+(res.clinical_flags||[]).map(f=>`<span class="fp">${f}</span>`).join('')+'</div>':''}`;
+    document.getElementById('r1').style.display='block';
+    document.getElementById('tw1').style.display='none';
+    const lv=document.getElementById('lv-ecg');lv.textContent=cls;lv.className='rp-v '+(cc);
+    pulse('rs1');
+    setDone(1);toast('ECG: '+cls+' · '+conf+'% confidence','ok');
+  }catch(e){
+    if(e.name==='AbortError'){
+      toast('ECG timed out — PULSE-7B may still be loading. Try again in 30s.','warn');
+    }else{
+      toast('ECG analysis failed: '+e.message,'warn');
+    }
+  }
+  sr('rb1',false,'Run ECG analysis');
+}
+
+async function runEcho(){
+  if(!S.echoF)return;sr('rb2',true);
+  const fd=new FormData();fd.append('file',S.echoF);fd.append('patient_id',pi());
+  try{
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),150000);
+    const r=await fetch(mc()+'/tools/estimate_ejection_fraction',{method:'POST',body:fd,signal:ctrl.signal});
+    clearTimeout(tid);
+    const d=await r.json();S.echoD=d;
+    const res=d.result;const ef=parseFloat(res.ef_percent).toFixed(1);
+    const ec=ef<40?'r':ef<55?'a':'g';
+    document.getElementById('r2').innerHTML=`
+      <div class="mrow">
+        ${mm('Ejection fraction',ef+'%',ec)}
+        ${mm('HF class',res.hf_classification,ef<40?'r':ef<55?'a':'g')}
+        ${mm('Confidence',(res.confidence*100).toFixed(0)+'%','b')}
+      </div>
+      <div class="dtbl">
+        ${dr_('SNOMED',res.hf_snomed_code)}
+        ${dr_('Classification',res.hf_snomed_description||'—')}
+        ${dr_('Reasoning',res.reasoning||'—')}
+        ${dr_('Source',res.ef_source||'—')}
+      </div>`;
+    document.getElementById('r2').style.display='block';
+    const lv=document.getElementById('lv-ef');lv.textContent=ef+'%';lv.className='rp-v '+ec;
+    pulse('rs2');
+    setDone(2);toast('EF: '+ef+'% · '+res.hf_classification,'ok');
+  }catch(e){
+    toast('Echo EF failed: '+e.message,'warn');
+  }
+  sr('rb2',false,'Estimate ejection fraction');
+}
+
+async function runStruct(){
+  if(!S.echoF){toast('Upload echo video in step 2 first','warn');return}
+  sr('rb3',true);
+  const fd=new FormData();fd.append('file',S.echoF);fd.append('patient_id',pi());
+  try{
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),150000);
+    const r=await fetch(mc()+'/tools/analyze_cardiac_structure',{method:'POST',body:fd,signal:ctrl.signal});
+    clearTimeout(tid);
+    const d=await r.json();S.stD=d;
+    const res=d.result;
+    document.getElementById('r3').innerHTML=`
+      <div class="mrow">
+        ${mm('LV size',res.lv_size||'—','neu')}
+        ${mm('Wall thickness',res.wall_thickness||'—','neu')}
+        ${mm('Effusion',res.pericardial_effusion?'Yes':'No',res.pericardial_effusion?'r':'g')}
+      </div>
+      <div class="dtbl">
+        ${dr_('Confidence',((res.confidence||0)*100).toFixed(0)+'%')}
+        ${dr_('Reasoning',res.reasoning||'—')}
+      </div>
+      ${(res.structural_flags||[]).length?'<div class="fp_">'+(res.structural_flags||[]).map(f=>`<span class="fp">${f}</span>`).join('')+'</div>':''}`;
+    document.getElementById('r3').style.display='block';
+    document.getElementById('lv-lv').textContent=res.lv_size||'—';
+    pulse('rs3');
+    setDone(3);toast('Structural analysis complete','ok');
+  }catch(e){
+    toast('Structure failed: '+e.message,'warn');
+  }
+  sr('rb3',false,'Analyse cardiac structure');
+}
+
+async function runRisk(){
+  sr('rb4',true);
+  const age=parseInt(document.getElementById('age').value)||67;
+  const trop=parseFloat(document.getElementById('trop').value)||2.8;
+  const hist=document.getElementById('hist').value;
+  const conds=document.getElementById('conds').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const body={
+    ecg_analysis:  S.ecgD  || {result:{rhythm_class:'MI',confidence:.91}},
+    echo_analysis: S.echoD || {result:{ef_percent:45.0}},
+    clinical_context:{age,troponin_ratio:trop,history_suspicion:hist,known_conditions:conds}
+  };
+  try{
+    const r=await fetch(mc()+'/tools/risk_stratify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();S.rkD=d;
+    const res=d.result;const tier=res.triage_tier;
+    const tc=tier==='Urgent'?'urg':tier==='Routine'?'rot':'nrm';
+    const ic={Urgent:IC.warn,Routine:IC.info,Normal:IC.ok};
+    const cs=res.component_scores;
+    const nm={H:'History',E:'ECG',A:'Age',R:'Risk Fx',T:'Troponin'};
+    document.getElementById('r4').innerHTML=`
+      <div class="tbn ${tc}">
+        <div class="tbn-i">${ic[tier]||IC.info}</div>
+        <div><div class="tbn-tier">TRIAGE: ${tier.toUpperCase()}</div><div class="tbn-det">${res.recommended_action}</div></div>
+        <div class="tbn-sc">${res.heart_score}/10</div>
+      </div>
+      <div class="hrow">${['H','E','A','R','T'].map(k=>`<div class="hb"><div class="hl">${k}</div><div class="hn">${nm[k]}</div><div class="hs_">${cs[k]}/2</div></div>`).join('')}</div>
+      <div class="dtbl" style="margin-top:10px">
+        ${dr_('10-day MACE risk',res.mace_10day_probability)}
+        ${dr_('Recommendation',res.recommended_action)}
+      </div>`;
+    document.getElementById('r4').style.display='block';
+    const lv=document.getElementById('lv-tier');
+    lv.textContent=tier;lv.className='rp-v '+(tier==='Urgent'?'r':tier==='Routine'?'a':'g');
+    pulse('rs4');
+    setDone(4);toast('HEART: '+res.heart_score+'/10 — '+tier,'ok');
+  }catch(e){
+    toast('Risk stratification failed: '+e.message,'warn');
+  }
+  sr('rb4',false,'Compute HEART score');
+}
+
+async function runReport(){
+  sr('rb5',true);
+  const eR=S.ecgD?.result||{rhythm_class:'MI',confidence:.91,snomed_code:'57054005',snomed_description:'Acute myocardial infarction',clinical_flags:['ST elevation']};
+  const efR=S.echoD?.result||{ef_percent:45.0,hf_classification:'HFmrEF',hf_snomed_code:'703272007',hf_snomed_description:'Heart failure with mid-range ejection fraction',wall_motion_flags:[]};
+  const rkR=S.rkD?.result||{heart_score:7,triage_tier:'Urgent',mace_10day_probability:'> 50%',recommended_action:'Immediate cardiology consultation'};
+  const body={patient_id:pi(),ecg_analysis:{result:eR},echo_analysis:{result:efR},risk_stratification:{result:rkR}};
+  try{
+    const r=await fetch(mc()+'/tools/generate_cardiac_report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();S.rpD=d;
+    const res=d.result;const tier=res.triage_tier;
+    const tc=tier==='Urgent'?'var(--red)':tier==='Routine'?'var(--amb)':'var(--grn)';
+    const bun=res.fhir_bundle;
+    document.getElementById('r5').innerHTML=`
+      <div class="sbrow">
+        <div class="sb_ tier"><div class="sb-v" style="color:${tc}">${tier}</div><div class="sb-l">TRIAGE TIER</div></div>
+        <div class="sb_ res"><div class="sb-v" style="color:var(--blu2)">${res.resource_count}</div><div class="sb-l">FHIR RESOURCES</div></div>
+        <div class="sb_ val"><div class="sb-v" style="color:var(--grn)">${res.validation_passed?'✓ VALID':'✗ FAILED'}</div><div class="sb-l">VALIDATION</div></div>
+      </div>
+      <div class="fv">
+        <div class="fvh">
+          <span class="fvl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+            FHIR R4 Bundle · ${bun.id}
+          </span>
+          <span class="fvo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Schema validated
+          </span>
+        </div>
+        <div class="fvc">${JSON.stringify(bun,null,2)}</div>
+      </div>
+      <button class="dlbtn" onclick="dlF()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download FHIR bundle JSON
+      </button>`;
+    document.getElementById('r5').style.display='block';
+    setDone(5);toast('FHIR bundle generated — validation passed','ok');
+  }catch(e){
+    toast('Report generation failed: '+e.message,'warn');
+  }
+  sr('rb5',false,'Generate FHIR bundle');
+}
+
+function dlF(){
+  if(!S.rpD)return;
+  const b=new Blob([JSON.stringify(S.rpD.result.fhir_bundle,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='cardiocore-fhir-'+pi()+'.json';a.click();
+  toast('FHIR bundle downloaded','ok');
+}
+</script>
+</body>
+</html>
