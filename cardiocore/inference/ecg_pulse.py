@@ -66,7 +66,7 @@ def _load_model():
         model_path=_MODEL_ID,
         model_base=None,
         model_name=model_name,
-        device="cpu",
+        device_map="cuda:0",
     )
 
     image_processor = CLIPImageProcessor.from_pretrained(
