@@ -180,7 +180,7 @@ def analyze_ecg_image(image_bytes: bytes) -> dict:
                 input_ids,
                 images=image_tensor,
                 image_sizes=[img.size],
-                do_sample=False,
+                do_sample=True,
                 temperature=0.2,
                 top_p=0.9,
                 max_new_tokens=256,
