@@ -30,7 +30,14 @@ class Gemma4Client:
             api_key="not-needed"
         )
 
-        self._model_id = MODEL_NAME
+        # Auto-discover model from vLLM instead of using hardcoded name
+        try:
+            models = self.client.models.list()
+            self._model_id = models.data[0].id
+            logging.info(f"Auto-discovered model: {self._model_id}")
+        except Exception as e:
+            logging.warning(f"Could not auto-discover model, using default: {e}")
+            self._model_id = MODEL_NAME
 
     @property
     def model_id(self):
