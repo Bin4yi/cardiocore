@@ -22,26 +22,7 @@ _MODEL_ID = os.getenv(
 )
 
 
-ECG_PROMPT = """
-You are an ECG classification engine.
-
-Analyze the ECG image carefully.
-
-Return ONLY valid JSON.
-
-Do not explain.
-Do not use markdown.
-Do not use code fences.
-
-Schema:
-
-{
-  "rhythm_class": "NORM|MI|STTC|CD|HYP",
-  "confidence": 0.0,
-  "clinical_flags": ["finding1", "finding2"],
-  "reasoning": "one sentence"
-}
-"""
+ECG_PROMPT = "What cardiac conditions or abnormalities are present in this ECG? Classify the rhythm as one of: NORM (normal sinus rhythm), MI (myocardial infarction), STTC (ST-T wave change), CD (conduction disorder), or HYP (hypertrophy). Describe your findings."
 
 
 def _load_model():
@@ -183,12 +164,12 @@ def analyze_ecg_image(image_bytes: bytes) -> dict:
             output_ids = model.generate(
                 input_ids,
                 images=image_tensor,
-                do_sample=True,
-                temperature=0.2,
-                top_p=0.9,
-                max_new_tokens=256,
+                image_sizes=[img.size],
+                do_sample=False,
+                max_new_tokens=512,
             )
 
+        print("DEBUG full output:", tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0][:300])
         input_token_len = input_ids.shape[1]
 
         decoded = tokenizer.batch_decode(
