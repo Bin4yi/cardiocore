@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 GEMMA_BASE_URL = os.getenv(
     "GEMMA_BASE_URL",
-    "http://localhost:9000/v1"
+    os.getenv("VLLM_SERVER_URL", "http://localhost:9000/v1")
 )
 
 MODEL_NAME = os.getenv(
