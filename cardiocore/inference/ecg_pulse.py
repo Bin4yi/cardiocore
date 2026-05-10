@@ -73,6 +73,10 @@ def _load_model():
         "openai/clip-vit-large-patch14-336"
     )
 
+    # Move to GPU after loading (builder.py forces low_cpu_mem_usage=False)
+    model = model.to("cuda").half()
+    print(f"Model moved to GPU. Memory: {__import__('torch').cuda.memory_allocated()/1e9:.2f}GB")
+
     _MODEL = model
 
     _PROCESSOR = {
@@ -148,7 +152,7 @@ def analyze_ecg_image(image_bytes: bytes) -> dict:
         tokenizer = processor["tokenizer"]
         image_processor = processor["image_processor"]
 
-        conv = conv_templates["llava_v0"].copy()
+        conv = conv_templates["llava_v1"].copy()
 
         inp = DEFAULT_IMAGE_TOKEN + "\n" + ECG_PROMPT
 
